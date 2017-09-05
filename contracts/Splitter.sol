@@ -4,6 +4,7 @@ contract Splitter {
 	address public owner;
 	address bob;
 	address carol;
+	bool alreadyPaid;
 
   event LogPayment(uint amount);
 	event LogWithdrawal(uint amount);
@@ -43,7 +44,9 @@ contract Splitter {
 
 	function withdraw() public returns(bool) {
 		  require(this.balance >= 0);
+			require(!alreadyPaid);
 	    if (msg.sender == carol || msg.sender == bob) {
+				  alreadyPaid = true;
 				  LogWithdrawal(this.balance);
 					uint bobBalance = getBobMoney();
 					uint carolBalance = getCarolMoney();
