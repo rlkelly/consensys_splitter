@@ -1,0 +1,81 @@
+var Splitter = artifacts.require("./Splitter.sol");
+
+contract('Splitter', function(accounts) {
+  var instance;
+  var alice = accounts[0];
+  var bob = accounts[1];
+  var carol = accounts[2];
+
+  beforeEach(function (done) {
+    Splitter.new(bob, carol, {from: alice})
+    .then(function (_instance) {
+      instance = _instance;
+    }).then(() => done());
+  });
+
+  it("should init with no balance", function() {
+    return instance.getContractBalance.call().then(function(balance) {
+      assert.equal(balance.valueOf(), 0, "started with positive balance");
+    });
+  });
+
+  it("allow deposit from owner", function() {
+    return instance.sendMoney({from: alice, value: 100}).then(function() {
+      return instance.getContractBalance.call().then(function(balance) {
+        assert.equal(balance.valueOf(), 100, "balance is zero");
+      });
+    });
+  });
+
+  it("don't allow deposit from other users", function() {
+    return instance.sendMoney({from: bob, value: 1000}).then(function() {
+    })
+    .then(assert.fail)
+    .catch(() => {
+      return instance.getContractBalance.call().then(function(balance) {
+        assert.equal(balance.valueOf(), 0, "balance is zero");
+      });
+    });
+  });
+
+  it("should have bob and carols total equal balance", function() {
+    return instance.sendMoney({from: alice, value: 101}).then(function() {
+      return instance.getBobMoney.call().then(function(balance) {
+        var bobBalance = balance;
+        return instance.getCarolMoney.call().then(function(balance){
+          var carolBalance = balance;
+          console.log(bobBalance.valueOf(), carolBalance.valueOf())
+        })
+        assert.equal(carolBalance + bobBalance, 101);
+      });
+    });
+  });
+
+  it("withdraw should empty account", function() {
+    return instance.sendMoney({from: alice, value: 101}).then(function() {
+      instance.withdraw({from: carol}).then(function() {
+        return instance.getContractBalance.call().then(function(balance) {
+          assert.equal(balance.valueOf(), 0, "balance is zero");
+        });
+      });
+    });
+  });
+
+  it("owner suicide contract", () => {
+    return instance.killContract({from: alice}).then(() => {
+      return web3.eth.getCode(instance.address);
+    }).then((response)=>{
+      assert.equal(response, "0x0", "instance did not die");
+    })
+  });
+
+  it("non owner suicide contract", () => {
+    var currentAddress = web3.eth.getCode(instance.address);
+    return instance.killContract({from: bob}).then(() => {
+      return web3.eth.getCode(instance.address);
+    }).then((response)=>{
+      assert.equal(response, currentAddress, "instance died");
+    })
+  });
+
+});
