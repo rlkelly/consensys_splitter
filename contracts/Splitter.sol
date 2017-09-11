@@ -6,48 +6,28 @@ contract Splitter {
 	address carol;
 	bool carolNotPaid;
 	bool bobNotPaid;
-	uint bobBalance;
-	uint carolBalance;
+	mapping(address => uint) balances;
 
   event LogPayment(uint amount);
 	event LogWithdrawal(uint amount);
+	event LogFundsSplit(address first, address second, uint value);
 
-	function Splitter(address first, address second) {
+	function Splitter() {
 		owner = msg.sender;
-		bob = first;
-		carol = second;
 	}
 
-	function sendMoney() payable returns(bool) {
-		require(msg.sender == owner);
-		uint balance = msg.value;
-		LogPayment(balance);
-		bobBalance += msg.value / 2;
-		if (msg.value % 2 == 1) {
-			carolBalance += msg.value / 2 + 1;
-		} else {
-			carolBalance += msg.value;
-		}
-		carolNotPaid = true;
-		bobNotPaid = true;
-		return true;
+	function sendMoney(address address1, address address2) public payable returns(bool success) {
+	  uint half = msg.value / 2;
+	  uint remainder = msg.value % 2;
+	  balances[address1] += half;
+	  balances[address2] += half;
+	  balances[msg.sender] += remainder;
+	  LogFundsSplit(address1, address2, msg.value);
+	  return true;
 	}
 
-	function getBobMoney() returns(uint) {
-	    if (this.balance > 0) {
-    	    return this.balance / 2;
-	    }
-	    return 0;
-	}
-
-	function getCarolMoney() returns(uint) {
-	    if (this.balance <= 0) {
-	        return 0;
-	    }
-	    else if (this.balance % 2 == 1) {
-    	    return this.balance / 2 + 1;
-	    }
-	    return this.balance / 2;
+	function getMyBalance() returns(uint) {
+		return balances[msg.sender];
 	}
 
 	function getContractBalance() returns(uint) {
@@ -56,24 +36,10 @@ contract Splitter {
 
 	function withdraw() public returns(bool) {
 		  require(this.balance >= 0);
-			if (msg.sender == carol) {
-					require(carolNotPaid);
-					if (carolBalance > 0) {
-						carolNotPaid = false;
-	    	    carol.transfer(carolBalance);
-						carolBalance = 0;
-	    	    return true;
-					}
-	    }
-			if (msg.sender == bob) {
-					require(bobNotPaid);
-					if (bobBalance > 0) {
-						bobNotPaid = false;
-	    	    bob.transfer(bobBalance);
-						bobBalance = 0;
-	    	    return true;
-					}
-	    }
+			if (balances[msg.sender] > 0) {
+    	    msg.sender.transfer(balances[msg.sender]);
+					return true;
+			}
 	    return false;
 	}
 

@@ -7,7 +7,7 @@ contract('Splitter', function(accounts) {
   var carol = accounts[2];
 
   beforeEach(function (done) {
-    Splitter.new(bob, carol, {from: alice})
+    Splitter.new({from: alice})
     .then(function (_instance) {
       instance = _instance;
     }).then(() => done());
@@ -20,7 +20,7 @@ contract('Splitter', function(accounts) {
   });
 
   it("allow deposit from owner", function() {
-    return instance.sendMoney({from: alice, value: 100}).then(function() {
+    return instance.sendMoney(bob, carol, {from: alice, value: 100}).then(function() {
       return instance.getContractBalance.call().then(function(balance) {
         assert.equal(balance.valueOf(), 100, "balance is zero");
       });
@@ -39,10 +39,10 @@ contract('Splitter', function(accounts) {
   });
 
   it("should have bob and carols total equal balance", function() {
-    return instance.sendMoney({from: alice, value: 101}).then(function() {
-      return instance.getBobMoney.call().then(function(balance) {
+    return instance.sendMoney(bob, carol, {from: alice, value: 101}).then(function() {
+      return instance.getMyBalance({from: bob}).then(function(balance) {
         var bobBalance = balance;
-        return instance.getCarolMoney.call().then(function(balance){
+        return instance.getMyBalance({from: carol}).then(function(balance){
           var carolBalance = balance;
         })
         return assert.equal(carolBalance + bobBalance, 101);
@@ -50,11 +50,11 @@ contract('Splitter', function(accounts) {
     });
   });
 
-  it("withdraw should empty account", function() {
-    return instance.sendMoney({from: alice, value: 101}).then(function() {
-      instance.withdraw({from: carol}).then(function(response) {
+  it("withdraw should remove my balance from total", function() {
+    return instance.sendMoney(bob, carol, {from: alice, value: 101}).then(function() {
+      instance.withdraw({from: carol}).then(function() {
         return instance.getContractBalance.call().then(function(balance) {
-          return assert.equal(balance.valueOf(), 50, "balance is zero");
+          return assert.equal(balance.valueOf(), 51, "balance is zero");
         });
       });
     });
