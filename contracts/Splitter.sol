@@ -4,7 +4,10 @@ contract Splitter {
 	address public owner;
 	address bob;
 	address carol;
-	bool alreadyPaid;
+	bool carolNotPaid;
+	bool bobNotPaid;
+	uint bobBalance;
+	uint carolBalance;
 
   event LogPayment(uint amount);
 	event LogWithdrawal(uint amount);
@@ -17,7 +20,16 @@ contract Splitter {
 
 	function sendMoney() payable returns(bool) {
 		require(msg.sender == owner);
-		LogPayment(msg.value);
+		uint balance = msg.value;
+		LogPayment(balance);
+		bobBalance += msg.value / 2;
+		if (msg.value % 2 == 1) {
+			carolBalance += msg.value / 2 + 1;
+		} else {
+			carolBalance += msg.value;
+		}
+		carolNotPaid = true;
+		bobNotPaid = true;
 		return true;
 	}
 
@@ -44,15 +56,23 @@ contract Splitter {
 
 	function withdraw() public returns(bool) {
 		  require(this.balance >= 0);
-			require(!alreadyPaid);
-	    if (msg.sender == carol || msg.sender == bob) {
-				  alreadyPaid = true;
-				  LogWithdrawal(this.balance);
-					uint bobBalance = getBobMoney();
-					uint carolBalance = getCarolMoney();
-    	    bob.transfer(bobBalance);
-    	    carol.transfer(carolBalance);
-    	    return true;
+			if (msg.sender == carol) {
+					require(carolNotPaid);
+					if (carolBalance > 0) {
+						carolNotPaid = false;
+	    	    carol.transfer(carolBalance);
+						carolBalance = 0;
+	    	    return true;
+					}
+	    }
+			if (msg.sender == bob) {
+					require(bobNotPaid);
+					if (bobBalance > 0) {
+						bobNotPaid = false;
+	    	    bob.transfer(bobBalance);
+						bobBalance = 0;
+	    	    return true;
+					}
 	    }
 	    return false;
 	}

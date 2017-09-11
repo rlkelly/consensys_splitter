@@ -33,7 +33,7 @@ contract('Splitter', function(accounts) {
     .then(assert.fail)
     .catch(() => {
       return instance.getContractBalance.call().then(function(balance) {
-        assert.equal(balance.valueOf(), 0, "balance is zero");
+        return assert.equal(balance.valueOf(), 0, "balance is zero");
       });
     });
   });
@@ -44,18 +44,17 @@ contract('Splitter', function(accounts) {
         var bobBalance = balance;
         return instance.getCarolMoney.call().then(function(balance){
           var carolBalance = balance;
-          console.log(bobBalance.valueOf(), carolBalance.valueOf())
         })
-        assert.equal(carolBalance + bobBalance, 101);
+        return assert.equal(carolBalance + bobBalance, 101);
       });
     });
   });
 
   it("withdraw should empty account", function() {
     return instance.sendMoney({from: alice, value: 101}).then(function() {
-      instance.withdraw({from: carol}).then(function() {
+      instance.withdraw({from: carol}).then(function(response) {
         return instance.getContractBalance.call().then(function(balance) {
-          assert.equal(balance.valueOf(), 0, "balance is zero");
+          return assert.equal(balance.valueOf(), 50, "balance is zero");
         });
       });
     });
@@ -65,7 +64,7 @@ contract('Splitter', function(accounts) {
     return instance.killContract({from: alice}).then(() => {
       return web3.eth.getCode(instance.address);
     }).then((response)=>{
-      assert.equal(response, "0x0", "instance did not die");
+      return assert.equal(response, "0x0", "instance did not die");
     })
   });
 
@@ -74,7 +73,7 @@ contract('Splitter', function(accounts) {
     return instance.killContract({from: bob}).then(() => {
       return web3.eth.getCode(instance.address);
     }).then((response)=>{
-      assert.equal(response, currentAddress, "instance died");
+      return assert.equal(response, currentAddress, "instance died");
     })
   });
 
